@@ -29,6 +29,7 @@ from config import (
 )
 
 logger = logging.getLogger(__name__)
+_USD_IDR_RATE_CACHE: float | None = None
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -75,6 +76,10 @@ def build_daily_frame(market_chart_json: dict) -> pd.DataFrame:
 
 async def get_usd_idr_rate(timeout: float = 8.0) -> float:
     """Fetch live USD→IDR rate; falls back to FALLBACK_USD_IDR_RATE."""
+    global _USD_IDR_RATE_CACHE
+    if _USD_IDR_RATE_CACHE is not None:
+        return _USD_IDR_RATE_CACHE
+
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             r = await client.get("https://open.er-api.com/v6/latest/USD")
@@ -82,10 +87,12 @@ async def get_usd_idr_rate(timeout: float = 8.0) -> float:
             data = r.json()
             rate = data["rates"].get("IDR")
             if rate:
-                return float(rate)
+                _USD_IDR_RATE_CACHE = float(rate)
+                return _USD_IDR_RATE_CACHE
     except Exception as exc:
         logger.warning("USD/IDR rate fetch failed (%s); using fallback %s", exc, FALLBACK_USD_IDR_RATE)
-    return FALLBACK_USD_IDR_RATE
+    _USD_IDR_RATE_CACHE = FALLBACK_USD_IDR_RATE
+    return _USD_IDR_RATE_CACHE
 
 
 # ─────────────────────────────────────────────────────────────────────────────
