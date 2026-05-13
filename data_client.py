@@ -78,8 +78,6 @@ def build_daily_frame(market_chart_json: dict) -> pd.DataFrame:
 async def get_usd_idr_rate(timeout: float = 8.0) -> float:
     """Fetch live USD→IDR rate; falls back to FALLBACK_USD_IDR_RATE."""
     global _USD_IDR_RATE_CACHE
-    if _USD_IDR_RATE_CACHE is not None:
-        return _USD_IDR_RATE_CACHE
 
     async with _USD_IDR_RATE_LOCK:
         if _USD_IDR_RATE_CACHE is not None:
@@ -96,8 +94,7 @@ async def get_usd_idr_rate(timeout: float = 8.0) -> float:
                     return _USD_IDR_RATE_CACHE
         except Exception as exc:
             logger.warning("USD/IDR rate fetch failed (%s); using fallback %s", exc, FALLBACK_USD_IDR_RATE)
-        _USD_IDR_RATE_CACHE = FALLBACK_USD_IDR_RATE
-        return _USD_IDR_RATE_CACHE
+        return FALLBACK_USD_IDR_RATE
 
 
 # ─────────────────────────────────────────────────────────────────────────────
