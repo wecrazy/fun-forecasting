@@ -47,7 +47,7 @@ Optional for GPU acceleration:
 ## Installation
 
 ```bash
-cd /home/runner/work/fun-forecasting/fun-forecasting
+cd /path/to/fun-forecasting
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt

@@ -82,6 +82,15 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _normalize_days(days: str) -> str:
+    value = str(days).strip().lower()
+    if value == "max":
+        return "max"
+    if value.isdigit() and int(value) > 0:
+        return str(int(value))
+    raise ValueError("--days must be 'max' or a positive integer (e.g. 365)")
+
+
 def _print_assets() -> None:
     print("\nCrypto assets:")
     for aid, name in CRYPTO_ASSETS.items():
@@ -156,13 +165,14 @@ def _short_summary(result: ForecastResult, export_paths: list[str]) -> str:
 
 async def _run(args: argparse.Namespace) -> dict[str, Any]:
     asset = _resolve_asset(args.asset)
+    days = _normalize_days(args.days)
     if args.horizon < 1:
         raise ValueError("--horizon must be >= 1")
 
     feat_df = await _prepare_features(
         asset=asset,
         currency=args.currency,
-        days=str(args.days),
+        days=days,
         include_exog=bool(args.include_exog),
     )
     if len(feat_df) < MIN_REQUIRED_ROWS:
