@@ -40,7 +40,10 @@ ASSET_ALIASES: dict[str, str] = {
     "bbri": "BBRI.JK",
     "asii": "ASII.JK",
 }
-# Minimum rows after feature engineering to keep CV/model fitting stable.
+# Minimum rows after feature engineering:
+# - longest lookback window is 60 days
+# - 5-fold walk-forward CV and SARIMAX need enough post-NaN observations
+# 120 keeps training/validation splits stable.
 MIN_REQUIRED_ROWS = 120
 
 
@@ -193,10 +196,12 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
 
     export_paths = _export_result(result, export_mode=args.export, output_dir=args.output_dir)
-    payload = asdict(result)
-    payload["export_paths"] = export_paths
-    payload["gpu_tree_method"] = get_xgb_tree_method()
-    payload["gpu_available"] = is_gpu_available()
+    payload = {
+        **asdict(result),
+        "export_paths": export_paths,
+        "gpu_tree_method": get_xgb_tree_method(),
+        "gpu_available": is_gpu_available(),
+    }
     return payload
 
 
