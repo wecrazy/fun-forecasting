@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from pathlib import Path
 from typing import Any
 
@@ -90,7 +90,8 @@ def _print_assets() -> None:
 async def _prepare_features(asset: str, currency: str, days: str, include_exog: bool) -> pd.DataFrame:
     main_df = await get_asset_data(asset, currency=currency, days=days)
 
-    if asset.lower() in CRYPTO_ASSETS and include_exog:
+    crypto_assets_lower = {k.lower() for k in CRYPTO_ASSETS}
+    if asset.lower() in crypto_assets_lower and include_exog:
         btc_task = get_asset_data("bitcoin", currency=currency, days=days)
         eth_task = get_asset_data("ethereum", currency=currency, days=days)
         btc_df, eth_df = await asyncio.gather(btc_task, eth_task)
@@ -194,7 +195,8 @@ def main() -> None:
         print(json.dumps(result_dict, indent=2))
         return
 
-    result = ForecastResult(**{k: v for k, v in result_dict.items() if k in ForecastResult.__dataclass_fields__})
+    result_field_names = {f.name for f in fields(ForecastResult)}
+    result = ForecastResult(**{k: v for k, v in result_dict.items() if k in result_field_names})
     export_paths = result_dict.get("export_paths", [])
     print(_short_summary(result, export_paths))
 
