@@ -39,6 +39,7 @@ ASSET_ALIASES: dict[str, str] = {
     "bbri": "BBRI.JK",
     "asii": "ASII.JK",
 }
+MIN_REQUIRED_ROWS = 120
 
 
 def _resolve_asset(user_asset: str) -> str:
@@ -60,7 +61,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--asset", default="funtoken", help="Asset id/ticker, e.g. funtoken, bitcoin, GOTO.JK")
     p.add_argument("--currency", default=DEFAULT_CURRENCY, choices=list(SUPPORTED_CURRENCIES))
     p.add_argument("--horizon", type=int, default=30, help="Forecast horizon in days")
-    p.add_argument("--days", default=HISTORY_DAYS, help="History window; 'max' or number of days")
+    p.add_argument(
+        "--days",
+        default=HISTORY_DAYS,
+        help="History window; 'max' or number of days (string value)",
+    )
     p.add_argument("--trials", type=int, default=OPTUNA_TRIALS, help="Optuna trials for XGBoost tuning")
     p.add_argument("--output-dir", default="outputs", help="Directory for exported files")
     p.add_argument("--export", choices=["none", "csv", "xlsx"], default="csv")
@@ -160,9 +165,9 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
         days=str(args.days),
         include_exog=bool(args.include_exog),
     )
-    if len(feat_df) < 120:
+    if len(feat_df) < MIN_REQUIRED_ROWS:
         raise ValueError(
-            f"Not enough feature rows ({len(feat_df)}). Increase --days or use --days max."
+            f"Not enough feature rows ({len(feat_df)}). Minimum required is {MIN_REQUIRED_ROWS}."
         )
 
     usd_idr_rate = await get_usd_idr_rate()
