@@ -126,3 +126,4 @@ With `--export xlsx`:
 - Currency choices are intentionally limited to **USD** and **IDR**.
 - For `.JK` stocks, native price is IDR; conversion to USD uses live USD/IDR rate.
 - For crypto, CoinGecko IDR pricing is supported directly.
+- If live FX retrieval fails, the system falls back to a default USD/IDR rate from config.

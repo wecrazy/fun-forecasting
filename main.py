@@ -45,7 +45,7 @@ ASSET_ALIASES: dict[str, str] = {
 # - 5-fold walk-forward CV and SARIMAX need enough post-NaN observations
 # 120 keeps training/validation splits stable.
 MIN_REQUIRED_ROWS = 120
-MIN_HORIZON = 1
+MIN_HORIZON_DAYS = 1
 
 
 def _resolve_asset(user_asset: str) -> str:
@@ -172,8 +172,8 @@ def _short_summary(result: ForecastResult, export_paths: list[str]) -> str:
 async def _run(args: argparse.Namespace) -> dict[str, Any]:
     asset = _resolve_asset(args.asset)
     days = _normalize_days(args.days)
-    if args.horizon < MIN_HORIZON:
-        raise ValueError(f"--horizon must be >= {MIN_HORIZON}")
+    if args.horizon < MIN_HORIZON_DAYS:
+        raise ValueError(f"--horizon must be >= {MIN_HORIZON_DAYS}")
 
     feat_df = await _prepare_features(
         asset=asset,
