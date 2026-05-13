@@ -31,7 +31,7 @@ Forecasting project in Python for:
 
 ## System Requirements
 
-- Python **3.10+** (recommended 3.11/3.12)
+- Python **3.10+**
 - pip
 - Internet access for market data APIs
 
