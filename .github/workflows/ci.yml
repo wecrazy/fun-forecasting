@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      # Inject API keys from repository secrets so config.py can read them.
+      # The keys default to empty strings in config.py, so CI still passes
+      # when the secrets are not yet configured.
+      COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+      COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Smoke test — list supported assets
+        run: python main.py --list-assets

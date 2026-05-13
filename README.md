@@ -1,5 +1,7 @@
 # FUN Forecasting (Crypto + Stocks, USD/IDR)
 
+[![CI](https://github.com/wecrazy/fun-forecasting/actions/workflows/ci.yml/badge.svg)](https://github.com/wecrazy/fun-forecasting/actions/workflows/ci.yml)
+
 Forecasting project in Python for:
 - **FUNToken** (primary target)
 - Other crypto assets (BTC, ETH, BNB, SOL, etc.)
@@ -118,6 +120,54 @@ With `--export csv`:
 With `--export xlsx`:
 - `outputs/<asset>_<currency>_report.xlsx`
   - Sheets: `forecast`, `history`, `diagnostics`
+
+---
+
+## CI/CD
+
+### Continuous Integration (CI)
+
+Runs automatically on every push and pull request:
+1. Sets up Python 3.11
+2. Installs `requirements.txt`
+3. Runs a smoke test: `python main.py --list-assets`
+
+### Continuous Deployment (CD)
+
+Triggered by:
+- **Manual run** via *Actions → CD → Run workflow* (choose asset, currency, horizon, export)
+- **Automatic** on every push to `main` after CI passes
+
+The CD job:
+1. Installs dependencies
+2. Builds a temporary `.env` inside the runner from GitHub Secrets (never committed)
+3. Runs the forecast and uploads results as a GitHub Actions artifact (30-day retention)
+
+### Required GitHub Secrets
+
+Set these in **Settings → Secrets and variables → Actions**:
+
+| Secret | Required | Description |
+|---|---|---|
+| `COINGECKO_API_KEY` | Yes | CoinGecko API key |
+| `COINMARKETCAP_API_KEY` | No | CoinMarketCap API key (fallback) |
+| `OPTUNA_TRIALS` | No | Override Optuna trial count (default: 60) |
+| `USE_GPU` | No | `auto` / `true` / `false` (default: auto) |
+
+> **Never** commit a real `.env` file. The `.github/workflows/cd.yml` generates one at
+> runtime inside the runner from the secrets above.
+
+### GitHub Environment (optional)
+
+To add deployment protection rules (e.g. require a manual approval before CD runs):
+1. Go to **Settings → Environments → New environment**
+2. Name it `production`
+3. Add required reviewers or branch restrictions as needed
+
+### Extending the Deploy Step
+
+At the bottom of `.github/workflows/cd.yml` there is a commented-out block showing how
+to add a real deploy step (Render, Railway, VPS, etc.). Add your target there.
 
 ---
 

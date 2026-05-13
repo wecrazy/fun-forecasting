@@ -1,0 +1,106 @@
+name: CD
+
+on:
+  # Manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      asset:
+        description: "Asset to forecast (e.g. funtoken, bitcoin, GOTO.JK)"
+        required: false
+        default: "funtoken"
+      currency:
+        description: "Output currency (usd or idr)"
+        required: false
+        default: "usd"
+      horizon:
+        description: "Forecast horizon in days"
+        required: false
+        default: "30"
+      export:
+        description: "Export format (none, csv, xlsx)"
+        required: false
+        default: "csv"
+
+  # Auto-deploy when CI passes on main
+  push:
+    branches: [main]
+
+# Prevent multiple CD runs for the same ref from running in parallel.
+# To require CI to pass before this workflow runs on main, configure a
+# branch protection rule that requires the "CI" workflow to succeed, or
+# change the trigger below to `workflow_run` referencing the CI workflow.
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Run Forecast & Deploy
+    runs-on: ubuntu-latest
+    environment: production   # create a "production" GitHub Environment in Settings → Environments; add protection rules there as needed
+    permissions:
+      contents: read
+
+    env:
+      # --- API keys (set these in Settings → Secrets → Actions) ---
+      COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+      COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+
+      # --- Optional forecasting overrides ---
+      DEFAULT_ASSET: ${{ inputs.asset || 'funtoken' }}
+      DEFAULT_CURRENCY: ${{ inputs.currency || 'usd' }}
+      OPTUNA_TRIALS: ${{ secrets.OPTUNA_TRIALS || '60' }}
+      USE_GPU: ${{ secrets.USE_GPU || 'auto' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Build a temporary .env inside the runner — never committed to git.
+      # Useful if any library reads .env directly instead of OS env vars.
+      - name: Generate runtime .env (in-runner only, not committed)
+        run: |
+          cat > .env <<EOF
+          COINGECKO_API_KEY=${COINGECKO_API_KEY}
+          COINMARKETCAP_API_KEY=${COINMARKETCAP_API_KEY}
+          DEFAULT_ASSET=${DEFAULT_ASSET}
+          DEFAULT_CURRENCY=${DEFAULT_CURRENCY}
+          OPTUNA_TRIALS=${OPTUNA_TRIALS}
+          USE_GPU=${USE_GPU}
+          EOF
+
+      - name: Run forecast
+        run: |
+          python main.py \
+            --asset "${{ inputs.asset || 'funtoken' }}" \
+            --currency "${{ inputs.currency || 'usd' }}" \
+            --horizon ${{ inputs.horizon || 30 }} \
+            --export ${{ inputs.export || 'csv' }}
+
+      # Upload forecast outputs as a GitHub Actions artifact (30-day retention)
+      - name: Upload forecast outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-outputs-${{ github.run_id }}
+          path: outputs/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # ----------------------------------------------------------------
+      # Add your actual deploy step below, e.g.:
+      #
+      # - name: Deploy to Render / Railway / VPS
+      #   env:
+      #     DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+      #   run: |
+      #     curl -X POST "https://api.render.com/deploy/srv-xxxx?key=${DEPLOY_TOKEN}"
+      # ----------------------------------------------------------------
