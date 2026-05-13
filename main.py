@@ -15,6 +15,7 @@ import pandas as pd
 from config import (
     ALL_ASSETS,
     CRYPTO_ASSETS,
+    DEFAULT_ASSET,
     DEFAULT_CURRENCY,
     HISTORY_DAYS,
     INCLUDE_BTC_ETH,
@@ -39,6 +40,7 @@ ASSET_ALIASES: dict[str, str] = {
     "bbri": "BBRI.JK",
     "asii": "ASII.JK",
 }
+# Minimum rows after feature engineering to keep CV/model fitting stable.
 MIN_REQUIRED_ROWS = 120
 
 
@@ -58,7 +60,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Forecast crypto and stock prices in USD or IDR, with CSV/XLSX export."
     )
-    p.add_argument("--asset", default="funtoken", help="Asset id/ticker, e.g. funtoken, bitcoin, GOTO.JK")
+    p.add_argument("--asset", default=DEFAULT_ASSET, help="Asset id/ticker, e.g. funtoken, bitcoin, GOTO.JK")
     p.add_argument("--currency", default=DEFAULT_CURRENCY, choices=list(SUPPORTED_CURRENCIES))
     p.add_argument("--horizon", type=int, default=30, help="Forecast horizon in days")
     p.add_argument(

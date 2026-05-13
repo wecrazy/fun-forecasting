@@ -20,6 +20,7 @@ OPTUNA_TRIALS: int = int(os.getenv("OPTUNA_TRIALS", "60"))
 HISTORY_DAYS: str = os.getenv("HISTORY_DAYS", "max")
 INCLUDE_BTC_ETH: bool = os.getenv("INCLUDE_BTC_ETH", "1") == "1"
 DEFAULT_CURRENCY: str = os.getenv("DEFAULT_CURRENCY", "usd").lower()  # "usd" or "idr"
+DEFAULT_ASSET: str = os.getenv("DEFAULT_ASSET", "funtoken")
 
 # ── GPU ───────────────────────────────────────────────────────────────────────
 USE_GPU: str = os.getenv("USE_GPU", "auto").lower()  # "auto" | "true" | "false"
