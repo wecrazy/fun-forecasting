@@ -37,11 +37,12 @@ def is_gpu_available() -> bool:
     return False
 
 
-def get_xgb_tree_method() -> str:
+def get_xgb_tree_method(gpu_available: bool | None = None) -> str:
     """
     Return the best XGBoost tree_method string.
     Uses 'gpu_hist' when GPU available; otherwise 'hist'.
     """
-    if USE_GPU == "true" or (USE_GPU == "auto" and is_gpu_available()):
+    available = is_gpu_available() if gpu_available is None else gpu_available
+    if USE_GPU == "true" or (USE_GPU == "auto" and available):
         return "gpu_hist"
     return "hist"

@@ -30,6 +30,7 @@ from config import (
 
 logger = logging.getLogger(__name__)
 _USD_IDR_RATE_CACHE: float | None = None
+_USD_IDR_RATE_LOCK = asyncio.Lock()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -80,19 +81,23 @@ async def get_usd_idr_rate(timeout: float = 8.0) -> float:
     if _USD_IDR_RATE_CACHE is not None:
         return _USD_IDR_RATE_CACHE
 
-    try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            r = await client.get("https://open.er-api.com/v6/latest/USD")
-            r.raise_for_status()
-            data = r.json()
-            rate = data["rates"].get("IDR")
-            if rate:
-                _USD_IDR_RATE_CACHE = float(rate)
-                return _USD_IDR_RATE_CACHE
-    except Exception as exc:
-        logger.warning("USD/IDR rate fetch failed (%s); using fallback %s", exc, FALLBACK_USD_IDR_RATE)
-    _USD_IDR_RATE_CACHE = FALLBACK_USD_IDR_RATE
-    return _USD_IDR_RATE_CACHE
+    async with _USD_IDR_RATE_LOCK:
+        if _USD_IDR_RATE_CACHE is not None:
+            return _USD_IDR_RATE_CACHE
+
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                r = await client.get("https://open.er-api.com/v6/latest/USD")
+                r.raise_for_status()
+                data = r.json()
+                rate = data["rates"].get("IDR")
+                if rate:
+                    _USD_IDR_RATE_CACHE = float(rate)
+                    return _USD_IDR_RATE_CACHE
+        except Exception as exc:
+            logger.warning("USD/IDR rate fetch failed (%s); using fallback %s", exc, FALLBACK_USD_IDR_RATE)
+        _USD_IDR_RATE_CACHE = FALLBACK_USD_IDR_RATE
+        return _USD_IDR_RATE_CACHE
 
 
 # ─────────────────────────────────────────────────────────────────────────────

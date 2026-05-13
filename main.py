@@ -22,12 +22,11 @@ from config import (
     OPTUNA_TRIALS,
     STOCK_ASSETS,
     SUPPORTED_CURRENCIES,
-    USE_GPU,
 )
 from data_client import get_asset_data, get_usd_idr_rate
 from features import add_features
 from forecast import ForecastResult, run_forecast
-from gpu_utils import is_gpu_available
+from gpu_utils import get_xgb_tree_method, is_gpu_available
 
 ASSET_ALIASES: dict[str, str] = {
     "fun": "funtoken",
@@ -199,7 +198,7 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
 
     export_paths = _export_result(result, export_mode=args.export, output_dir=args.output_dir)
     gpu_available = is_gpu_available()
-    gpu_tree_method = "gpu_hist" if USE_GPU == "true" or (USE_GPU == "auto" and gpu_available) else "hist"
+    gpu_tree_method = get_xgb_tree_method(gpu_available=gpu_available)
     payload = {
         **asdict(result),
         "export_paths": export_paths,
