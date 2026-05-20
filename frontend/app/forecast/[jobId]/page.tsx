@@ -6,11 +6,11 @@ import JobPoller from '@/components/JobPoller'
 import Link from 'next/link'
 
 interface Props {
-  params: { jobId: string }
+  params: Promise<{ jobId: string }>
 }
 
 export default async function ForecastResultPage({ params }: Props) {
-  const { jobId } = params
+  const { jobId } = await params
   let result = null
   let fetchError: string | null = null
 
