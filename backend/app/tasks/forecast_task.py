@@ -27,7 +27,14 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 # ── Sync SQLAlchemy engine for Celery worker (no asyncio) ──────────────────
-_sync_db_url = settings.DATABASE_URL.replace("+asyncpg", "+psycopg2", 1)
+if "+asyncpg" in settings.DATABASE_URL:
+    _sync_db_url = settings.DATABASE_URL.replace("+asyncpg", "+psycopg2", 1)
+elif "+psycopg2" in settings.DATABASE_URL:
+    _sync_db_url = settings.DATABASE_URL
+else:
+    raise ValueError(
+        "DATABASE_URL must use postgresql+asyncpg or postgresql+psycopg2 for Celery worker sync engine"
+    )
 _engine = None
 _SessionLocal = None
 
