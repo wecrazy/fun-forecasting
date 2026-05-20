@@ -164,7 +164,9 @@ def run_pipeline(
 
     if len(df_feat) < MIN_REQUIRED_ROWS:
         raise ValueError(
-            f"Not enough feature rows ({len(df_feat)}). Minimum required: {MIN_REQUIRED_ROWS}."
+            f"Not enough feature rows ({len(df_feat)}). Minimum required: {MIN_REQUIRED_ROWS}. "
+            "Try using a longer history window (e.g., history_days='730' or history_days='max') "
+            "to gather more data points."
         )
     _emit("features_done", 0.10, f"Feature engineering done: {len(df_feat)} rows")
 

@@ -2,6 +2,7 @@ import { getForecast, formatPrice } from '@/lib/api'
 import ForecastChart from '@/components/ForecastChart'
 import MetricCards from '@/components/MetricCards'
 import JobStatusBadge from '@/components/JobStatusBadge'
+import JobPoller from '@/components/JobPoller'
 import Link from 'next/link'
 
 interface Props {
@@ -33,10 +34,17 @@ export default async function ForecastResultPage({ params }: Props) {
   if (result.status === 'pending' || result.status === 'running') {
     return (
       <div className="text-center py-20 space-y-4">
+        {/* Client-side SSE poller — refreshes the page when the job completes */}
+        <JobPoller jobId={jobId} status={result.status} />
         <div className="text-5xl animate-spin">⏳</div>
         <h1 className="text-2xl font-bold text-white">Forecast In Progress</h1>
-        <p className="text-gray-400">Job {jobId} is currently {result.status}. This page will refresh shortly.</p>
-        <meta httpEquiv="refresh" content="5" />
+        <p className="text-gray-400">
+          Job {jobId} is currently <span className="font-medium text-yellow-400">{result.status}</span>.
+          This page will update automatically when the forecast completes.
+        </p>
+        <Link href="/" className="text-sm text-gray-500 hover:text-gray-400">
+          ← Back to Dashboard
+        </Link>
       </div>
     )
   }

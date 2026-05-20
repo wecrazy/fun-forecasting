@@ -1,3 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: fun-forecasting
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -56,4 +68,5 @@ spec:
             periodSeconds: 10
       volumes:
         - name: redis-data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: redis-pvc
