@@ -1,179 +1,218 @@
-# FUN Forecasting (Crypto + Stocks, USD/IDR)
+# 📈 Fun-Forecasting v2
 
 [![CI](https://github.com/wecrazy/fun-forecasting/actions/workflows/ci.yml/badge.svg)](https://github.com/wecrazy/fun-forecasting/actions/workflows/ci.yml)
 
-Forecasting project in Python for:
-- **FUNToken** (primary target)
-- Other crypto assets (BTC, ETH, BNB, SOL, etc.)
-- Indonesian stocks (e.g. **GOTO.JK**, BBCA.JK, TLKM.JK, BBRI.JK, ASII.JK)
-- Output in **USD** or **IDR**
-- Export forecast reports to **CSV** or **Excel (.xlsx)**
+A production-grade, full-stack multi-asset price forecasting platform.
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js 15 (App Router) + Tailwind CSS + Recharts |
+| **Backend API** | FastAPI + Uvicorn |
+| **Task Queue** | Celery + Redis (broker + result backend) |
+| **ML Models** | XGBoost (Optuna) · SARIMAX · Facebook Prophet · PyTorch LSTM |
+| **Feature Engineering** | Pandas + Polars (fast path) |
+| **Database** | PostgreSQL (async SQLAlchemy + Alembic) |
+| **Cache** | Redis (pub/sub for SSE, cache) |
+| **Deployment** | Docker Compose (dev) · Kubernetes (prod) |
 
 ---
 
-## Features
+## Architecture
 
-- Unified market data client:
-  - CoinGecko for crypto history + live price
-  - CoinMarketCap fallback for live crypto price
-  - Yahoo Finance (`yfinance`) for stock data
-- Feature engineering:
-  - Log returns, momentum, volatility windows
-  - RSI, MACD, Bollinger Bands
-  - Calendar effects
-  - Optional BTC/ETH exogenous factors
-- Forecasting model:
-  - XGBoost with Optuna tuning
-  - SARIMAX model
-  - Ensemble output + confidence bands
-- GPU-aware:
-  - Auto-detects CUDA and uses XGBoost GPU mode when available
+```
+Browser
+  └── Next.js (port 3000)
+        │  REST + SSE
+        ▼
+  FastAPI (port 8000)
+        │  enqueue tasks
+        ▼
+  Celery Workers
+        │  read/write
+        ├── PostgreSQL  ← jobs, predictions, assets
+        └── Redis       ← broker, result backend, SSE pub/sub
+```
 
 ---
 
-## System Requirements
-
-- Python **3.10+**
-- pip
-- Internet access for market data APIs
-
-Optional for GPU acceleration:
-- NVIDIA GPU + CUDA-compatible environment
-- Optional `torch` install for faster CUDA detection:
-  ```bash
-  pip install torch
-  ```
-
----
-
-## Installation
+## Quick Start (Docker Compose)
 
 ```bash
-cd /path/to/fun-forecasting
-python -m venv .venv
-source .venv/bin/activate
+# 1. Copy env file
+cp .env.example .env
+# Edit .env: add COINGECKO_API_KEY if you have one
+
+# 2. Start all services
+docker compose up -d
+
+# 3. Run DB migrations
+docker compose exec backend alembic upgrade head
+
+# 4. Open the app
+open http://localhost:3000
+# API docs:
+open http://localhost:8000/docs
+# Flower (Celery monitoring):
+open http://localhost:5555
+```
+
+---
+
+## Local Development (without Docker)
+
+### Backend
+
+```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+
+# Start FastAPI
+uvicorn app.main:app --reload --port 8000
+
+# Start Celery worker (separate terminal)
+celery -A app.tasks.celery_app worker --loglevel=info --queues=forecasting,celery
+
+# Run migrations
+alembic upgrade head
 ```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev   # http://localhost:3000
+```
+
+### Prerequisites
+
+- PostgreSQL running locally (or via Docker: `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16-alpine`)
+- Redis running locally (or via Docker: `docker run -p 6379:6379 redis:7-alpine`)
 
 ---
 
-## Environment Setup
+## API Endpoints
 
-1. Copy the env template:
-   ```bash
-   cp .env.example .env
-   ```
-2. Fill your API keys in `.env`:
-   - `COINGECKO_API_KEY`
-   - `COINMARKETCAP_API_KEY` (optional fallback)
-
-> Keep `.env` private. It is git-ignored by default.
-
----
-
-## Usage
-
-### List supported assets
-```bash
-python main.py --list-assets
-```
-
-### Forecast FUNToken in USD (30 days), export CSV
-```bash
-python main.py --asset funtoken --currency usd --horizon 30 --export csv
-```
-
-### Forecast FUNToken in IDR, export Excel
-```bash
-python main.py --asset funtoken --currency idr --horizon 30 --export xlsx
-```
-
-### Forecast Indonesian stock (GOTO) in IDR
-```bash
-python main.py --asset GOTO.JK --currency idr --horizon 30 --export csv
-```
-
-### Quick aliases
-- `fun` → `funtoken`
-- `btc` → `bitcoin`
-- `goto` → `GOTO.JK`
-
-Example:
-```bash
-python main.py --asset fun --currency usd --horizon 14
-```
-
-### JSON output
-```bash
-python main.py --asset funtoken --currency usd --json --export none
-```
-
----
-
-## Export Outputs
-
-With `--export csv`:
-- `outputs/<asset>_<currency>_forecast.csv`
-- `outputs/<asset>_<currency>_history.csv`
-- `outputs/<asset>_<currency>_diagnostics.csv`
-
-With `--export xlsx`:
-- `outputs/<asset>_<currency>_report.xlsx`
-  - Sheets: `forecast`, `history`, `diagnostics`
-
----
-
-## CI/CD
-
-### Continuous Integration (CI)
-
-Runs automatically on every push and pull request:
-1. Sets up Python 3.11
-2. Installs `requirements.txt`
-3. Runs a smoke test: `python main.py --list-assets`
-
-### Continuous Deployment (CD)
-
-Triggered by:
-- **Manual run** via *Actions → CD → Run workflow* (choose asset, currency, horizon, export)
-- **Automatic** on every push to `main` after CI passes
-
-The CD job:
-1. Installs dependencies
-2. Builds a temporary `.env` inside the runner from GitHub Secrets (never committed)
-3. Runs the forecast and uploads results as a GitHub Actions artifact (30-day retention)
-
-### Required GitHub Secrets
-
-Set these in **Settings → Secrets and variables → Actions**:
-
-| Secret | Required | Description |
+| Method | Path | Description |
 |---|---|---|
-| `COINGECKO_API_KEY` | Yes | CoinGecko API key |
-| `COINMARKETCAP_API_KEY` | No | CoinMarketCap API key (fallback) |
-| `OPTUNA_TRIALS` | No | Override Optuna trial count (default: 60) |
-| `USE_GPU` | No | `auto` / `true` / `false` (default: auto) |
+| `GET` | `/health` | Health check |
+| `GET` | `/api/v1/assets` | List all supported assets |
+| `GET` | `/api/v1/assets/{id}/price` | Live price for asset |
+| `POST` | `/api/v1/forecasts` | Submit new forecast job |
+| `GET` | `/api/v1/forecasts` | List recent jobs |
+| `GET` | `/api/v1/forecasts/{id}` | Get full result |
+| `GET` | `/api/v1/jobs/{id}/status` | Job status |
+| `GET` | `/api/v1/jobs/{id}/stream` | SSE progress stream |
 
-> **Never** commit a real `.env` file. The `.github/workflows/cd.yml` generates one at
-> runtime inside the runner from the secrets above.
-
-### GitHub Environment (optional)
-
-To add deployment protection rules (e.g. require a manual approval before CD runs):
-1. Go to **Settings → Environments → New environment**
-2. Name it `production`
-3. Add required reviewers or branch restrictions as needed
-
-### Extending the Deploy Step
-
-At the bottom of `.github/workflows/cd.yml` there is a commented-out block showing how
-to add a real deploy step (Render, Railway, VPS, etc.). Add your target there.
+Full interactive docs: `http://localhost:8000/docs`
 
 ---
 
-## Notes
+## Supported Assets
 
-- Currency choices are intentionally limited to **USD** and **IDR**.
-- For `.JK` stocks, native price is IDR; conversion to USD uses live USD/IDR rate.
-- For crypto, CoinGecko IDR pricing is supported directly.
-- If live FX retrieval fails, the system falls back to a default USD/IDR rate from config.
+**Cryptocurrency** (via CoinGecko)
+- FUNToken (`funtoken`)
+- Bitcoin (`bitcoin`)
+- Ethereum (`ethereum`)
+- BNB (`binancecoin`)
+- Solana (`solana`)
+
+**Indonesian Stocks** (via Yahoo Finance)
+- Gojek Tokopedia (`GOTO.JK`)
+- Bank Central Asia (`BBCA.JK`)
+- Telkom Indonesia (`TLKM.JK`)
+- Bank Rakyat Indonesia (`BBRI.JK`)
+- Astra International (`ASII.JK`)
+
+---
+
+## Forecasting Models
+
+### XGBoost + Optuna
+Walk-forward cross-validation with Optuna hyperparameter search. Iterative multi-step forecasting on log-returns. GPU-accelerated when CUDA is available.
+
+### SARIMAX
+Seasonal ARIMA(2,0,2) with exogenous regressors (BTC/ETH returns, momentum, RSI, MACD, volume).
+
+### Prophet
+Facebook Prophet with weekly + yearly seasonality. Handles holidays and trend changepoints automatically.
+
+### LSTM (PyTorch)
+Stacked 2-layer LSTM trained on 30-day rolling windows of all engineered features. Runs on GPU when available.
+
+### Ensemble
+All models are combined via **inverse-error dynamic weighting**: models with lower CV-RMSE / residual std receive proportionally higher weights.
+
+---
+
+## Kubernetes Deployment
+
+```bash
+# Apply all manifests
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/postgres/
+kubectl apply -f k8s/redis/
+kubectl apply -f k8s/backend/
+kubectl apply -f k8s/worker/
+kubectl apply -f k8s/frontend/
+
+# Check rollout
+kubectl rollout status deployment/backend -n fun-forecasting
+kubectl rollout status deployment/worker -n fun-forecasting
+kubectl rollout status deployment/frontend -n fun-forecasting
+```
+
+> **Before deploying**: update `k8s/backend/configmap.yaml` secrets and `k8s/frontend/deployment.yaml` `NEXT_PUBLIC_API_URL` to your actual domain.
+
+---
+
+## Environment Variables
+
+See [`.env.example`](.env.example) for all configurable options.
+
+---
+
+## Project Structure
+
+```
+fun-forecasting/
+├── backend/                  # FastAPI + Celery Python app
+│   ├── app/
+│   │   ├── main.py           # FastAPI factory
+│   │   ├── config.py         # Pydantic Settings
+│   │   ├── database.py       # Async SQLAlchemy
+│   │   ├── models/           # ORM models
+│   │   ├── schemas/          # Pydantic schemas
+│   │   ├── api/v1/           # REST endpoints
+│   │   ├── services/         # Data client + Redis cache
+│   │   └── tasks/
+│   │       ├── celery_app.py
+│   │       ├── forecast_task.py
+│   │       └── pipeline/
+│   │           ├── features.py        # Polars + Pandas feature eng
+│   │           └── models/            # XGB · SARIMAX · Prophet · LSTM · Ensemble
+│   ├── alembic/              # DB migrations
+│   └── requirements.txt
+│
+├── frontend/                 # Next.js 15 app
+│   ├── app/                  # App Router pages
+│   ├── components/           # ForecastChart, MetricCards, etc.
+│   └── lib/api.ts            # Typed API client + SSE hook
+│
+├── docker/                   # Dockerfiles + Nginx config
+├── docker-compose.yml        # Local dev
+├── docker-compose.prod.yml   # Production overrides
+└── k8s/                      # Kubernetes manifests
+```
+
+---
+
+## Legacy CLI
+
+The original CLI is preserved and still works from the repo root:
+
+```bash
+pip install -r requirements.txt   # original requirements
+python main.py --asset funtoken --horizon 30 --currency usd
+```

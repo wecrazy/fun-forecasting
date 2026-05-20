@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fun-forecasting-config
+  namespace: fun-forecasting
+data:
+  APP_ENV: "production"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "postgres"
+  POSTGRES_DB: "fun_forecasting"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  DEFAULT_CURRENCY: "usd"
+  DEFAULT_ASSET: "funtoken"
+  HISTORY_DAYS: "max"
+  OPTUNA_TRIALS: "60"
+  INCLUDE_BTC_ETH: "true"
+  USE_GPU: "auto"
+---
+# IMPORTANT: Replace all placeholder values below with actual secure secrets before
+# deploying to production. Never commit real credentials to source control.
+# Generate a strong SECRET_KEY with: python -c "import secrets; print(secrets.token_hex(32))"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fun-forecasting-secrets
+  namespace: fun-forecasting
+type: Opaque
+stringData:
+  postgres-password: "change-me-in-production"
+  redis-password: "change-me-in-production"
+  secret-key: "change-me-in-production"
+  coingecko-api-key: ""
+  coinmarketcap-api-key: ""
