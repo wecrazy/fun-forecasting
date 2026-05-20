@@ -3,16 +3,14 @@ pipeline/runner.py — Orchestrates the full forecasting pipeline.
 
 Steps:
   1. Feature engineering (Polars fast path)
-  2. Train all models concurrently (ProcessPoolExecutor)
+  2. Train all models
   3. Iterative multi-step forecast for each model
   4. Ensemble via dynamic inverse-error weighting
   5. Build ForecastResult with per-model traces + confidence intervals
 """
 from __future__ import annotations
 
-import asyncio
 import logging
-from concurrent.futures import ProcessPoolExecutor
 from typing import Any, Callable
 
 import numpy as np

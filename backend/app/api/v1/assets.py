@@ -2,7 +2,7 @@
 api/v1/assets.py — Asset catalogue endpoints.
 
 GET /api/v1/assets        — list all supported assets
-GET /api/v1/assets/{id}   — get single asset + live price
+GET /api/v1/assets/{id}/price   — get single asset live price
 """
 from __future__ import annotations
 

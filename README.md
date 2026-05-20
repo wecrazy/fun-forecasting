@@ -6,7 +6,7 @@ A production-grade, full-stack multi-asset price forecasting platform.
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Next.js 14 (App Router) + Tailwind CSS + Recharts |
+| **Frontend** | Next.js 15 (App Router) + Tailwind CSS + Recharts |
 | **Backend API** | FastAPI + Uvicorn |
 | **Task Queue** | Celery + Redis (broker + result backend) |
 | **ML Models** | XGBoost (Optuna) · SARIMAX · Facebook Prophet · PyTorch LSTM |
@@ -195,7 +195,7 @@ fun-forecasting/
 │   ├── alembic/              # DB migrations
 │   └── requirements.txt
 │
-├── frontend/                 # Next.js 14 app
+├── frontend/                 # Next.js 15 app
 │   ├── app/                  # App Router pages
 │   ├── components/           # ForecastChart, MetricCards, etc.
 │   └── lib/api.ts            # Typed API client + SSE hook

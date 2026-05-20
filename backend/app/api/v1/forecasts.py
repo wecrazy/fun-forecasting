@@ -118,18 +118,17 @@ async def get_forecast(
         for p in sorted(job.predictions, key=lambda x: x.date)
     ]
 
-    # diagnostics and history_tail are stored as extra attributes on the job
-    diagnostics = getattr(job, "_diagnostics", {})
-    history_tail = getattr(job, "_history_tail", [])
-
     return ForecastResultOut(
         job_id=job.id,
         asset=job.asset,
         currency=job.currency,
         horizon_days=job.horizon_days,
         status=job.status,
-        diagnostics=diagnostics,
-        history_tail=history_tail,
+        last_date=job.last_date,
+        last_price=job.last_price,
+        last_price_idr=job.last_price_idr,
+        diagnostics=job.diagnostics or {},
+        history_tail=job.history_tail or [],
         predictions=preds,
         created_at=job.created_at,
         completed_at=job.completed_at,

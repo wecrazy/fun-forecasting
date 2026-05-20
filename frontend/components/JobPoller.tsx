@@ -19,6 +19,7 @@ export default function JobPoller({ jobId, status }: Props) {
   useEffect(() => {
     if (status !== 'pending' && status !== 'running') return
 
+    let fallbackInterval: ReturnType<typeof setInterval> | null = null
     const cleanup = subscribeJobProgress(
       jobId,
       (_evt: ProgressEvent) => {
@@ -31,12 +32,18 @@ export default function JobPoller({ jobId, status }: Props) {
       },
       () => {
         // SSE error — fall back to polling every 5 s
-        const interval = setInterval(() => router.refresh(), 5000)
-        return () => clearInterval(interval)
+        if (fallbackInterval == null) {
+          fallbackInterval = setInterval(() => router.refresh(), 5000)
+        }
       },
     )
 
-    return cleanup
+    return () => {
+      cleanup()
+      if (fallbackInterval != null) {
+        clearInterval(fallbackInterval)
+      }
+    }
   }, [jobId, status, router])
 
   return null

@@ -35,6 +35,11 @@ def upgrade() -> None:
         sa.Column("include_exog", sa.Boolean, nullable=False, server_default="true"),
         sa.Column("status", sa.String(16), nullable=False, server_default="pending"),
         sa.Column("error_message", sa.Text, nullable=True),
+        sa.Column("last_date", sa.String(10), nullable=True),
+        sa.Column("last_price", sa.Float, nullable=True),
+        sa.Column("last_price_idr", sa.Float, nullable=True),
+        sa.Column("diagnostics", sa.JSON, nullable=False, server_default=sa.text("'{}'::json")),
+        sa.Column("history_tail", sa.JSON, nullable=False, server_default=sa.text("'[]'::json")),
         sa.Column("celery_task_id", sa.String(64), nullable=True),
         sa.Column(
             "created_at",

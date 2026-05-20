@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, Float, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -30,6 +30,11 @@ class ForecastJob(Base):
     # Status: pending | running | done | failed
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    last_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    last_price_idr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    diagnostics: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    history_tail: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     celery_task_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 

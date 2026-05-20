@@ -5,10 +5,6 @@ metadata:
   namespace: fun-forecasting
 data:
   APP_ENV: "production"
-  DATABASE_URL: "postgresql+asyncpg://postgres:$(POSTGRES_PASSWORD)@postgres:5432/fun_forecasting"
-  REDIS_URL: "redis://:$(REDIS_PASSWORD)@redis:6379/0"
-  CELERY_BROKER_URL: "redis://:$(REDIS_PASSWORD)@redis:6379/1"
-  CELERY_RESULT_BACKEND: "redis://:$(REDIS_PASSWORD)@redis:6379/2"
   DEFAULT_CURRENCY: "usd"
   DEFAULT_ASSET: "funtoken"
   HISTORY_DAYS: "max"
@@ -28,6 +24,10 @@ type: Opaque
 stringData:
   postgres-password: "change-me-in-production"
   redis-password: "change-me-in-production"
+  database-url: "postgresql+asyncpg://postgres:change-me-in-production@postgres:5432/fun_forecasting"
+  redis-url: "redis://:change-me-in-production@redis:6379/0"
+  celery-broker-url: "redis://:change-me-in-production@redis:6379/1"
+  celery-result-backend: "redis://:change-me-in-production@redis:6379/2"
   secret-key: "change-me-in-production"
   coingecko-api-key: ""
   coinmarketcap-api-key: ""

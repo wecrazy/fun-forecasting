@@ -32,12 +32,10 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
-          args:
-            - redis-server
-            - --appendonly
-            - "yes"
-            - --requirepass
-            - $(REDIS_PASSWORD)
+          command:
+            - sh
+            - -c
+            - exec redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
           env:
             - name: REDIS_PASSWORD
               valueFrom:
@@ -58,12 +56,18 @@ spec:
               memory: 512Mi
           readinessProbe:
             exec:
-              command: ["redis-cli", "ping"]
+              command:
+                - sh
+                - -c
+                - redis-cli -a "$REDIS_PASSWORD" ping
             initialDelaySeconds: 5
             periodSeconds: 5
           livenessProbe:
             exec:
-              command: ["redis-cli", "ping"]
+              command:
+                - sh
+                - -c
+                - redis-cli -a "$REDIS_PASSWORD" ping
             initialDelaySeconds: 15
             periodSeconds: 10
       volumes:

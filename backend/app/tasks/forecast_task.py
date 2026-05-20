@@ -18,7 +18,6 @@ import logging
 from datetime import datetime, timezone
 
 from celery import Task
-from sqlalchemy import create_engine, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
@@ -140,6 +139,11 @@ def run_forecast_task(self: Task, job_id: str) -> dict:
 
         # Store diagnostics / history_tail as JSON in extra columns
         # (persisted via task result for now; can be moved to a separate table)
+        job.last_date = result.get("last_date")
+        job.last_price = result.get("last_price")
+        job.last_price_idr = result.get("last_price_idr")
+        job.diagnostics = result.get("diagnostics") or {}
+        job.history_tail = result.get("history_tail") or []
         job.status = "done"
         job.completed_at = datetime.now(timezone.utc)
         session.commit()

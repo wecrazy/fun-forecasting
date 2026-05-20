@@ -19,10 +19,13 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create all DB tables on startup (Alembic handles migrations in prod)."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables verified / created.")
+    """Create DB tables on startup only for dev/test; use Alembic in production."""
+    if settings.APP_ENV in {"development", "test"}:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables verified / created for %s.", settings.APP_ENV)
+    else:
+        logger.info("Skipping Base.metadata.create_all in production.")
     yield
     await engine.dispose()
     logger.info("Database engine disposed.")
