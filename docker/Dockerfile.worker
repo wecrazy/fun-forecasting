@@ -1,0 +1,40 @@
+# Celery worker — same base as backend, different entrypoint.
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ── Runtime ───────────────────────────────────────────────────────────────────
+FROM python:3.12-slim AS runtime
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /install /usr/local
+
+RUN useradd --no-create-home --uid 1001 appuser && chown appuser /app
+USER appuser
+
+COPY --chown=appuser:appuser . .
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    CELERY_CONCURRENCY=2
+
+HEALTHCHECK --interval=60s --timeout=30s --start-period=60s --retries=3 \
+  CMD celery -A app.tasks.celery_app inspect ping -t 10 || exit 1
+
+CMD ["celery", "-A", "app.tasks.celery_app", "worker", \
+     "--loglevel=info", \
+     "--concurrency=${CELERY_CONCURRENCY}", \
+     "--queues=forecasting,celery"]

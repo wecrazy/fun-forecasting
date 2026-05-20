@@ -1,0 +1,64 @@
+version: '3.9'
+
+# Production overrides — extends docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+      target: runtime
+    environment:
+      APP_ENV: production
+    command: >
+      uvicorn app.main:app
+        --host 0.0.0.0
+        --port 8000
+        --workers 4
+        --loop uvloop
+        --http httptools
+    restart: unless-stopped
+    volumes: []  # no dev volume mounts in prod
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.worker
+      target: runtime
+    environment:
+      APP_ENV: production
+      CELERY_CONCURRENCY: "4"
+    command: >
+      celery -A app.tasks.celery_app worker
+        --loglevel=warning
+        --concurrency=4
+        --queues=forecasting,celery
+    restart: unless-stopped
+    volumes: []
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+      target: runner
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+    command: node server.js
+    volumes: []
+
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+
+  redis:
+    restart: unless-stopped
+    command: >
+      redis-server
+        --appendonly yes
+        --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+
+  flower:
+    restart: unless-stopped

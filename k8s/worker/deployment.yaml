@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: fun-forecasting
+  labels:
+    app: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: fun-forecasting/worker:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - celery
+            - -A
+            - app.tasks.celery_app
+            - worker
+            - --loglevel=warning
+            - --concurrency=2
+            - --queues=forecasting,celery
+          envFrom:
+            - configMapRef:
+                name: fun-forecasting-config
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: fun-forecasting-secrets
+                  key: secret-key
+            - name: COINGECKO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: fun-forecasting-secrets
+                  key: coingecko-api-key
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fun-forecasting-secrets
+                  key: postgres-password
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fun-forecasting-secrets
+                  key: redis-password
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              cpu: 4000m
+              memory: 8Gi
+          livenessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - app.tasks.celery_app
+                - inspect
+                - ping
+                - -t
+                - "10"
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 20
